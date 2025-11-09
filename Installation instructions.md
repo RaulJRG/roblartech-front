@@ -40,3 +40,9 @@ npm install @radix-ui/react-toast
 
 # Envio de correos
 npm i @getbrevo/brevo
+
+
+# Despliegue en cloudflare
+npm i -D @opennextjs/cloudflare wrangler
+
+(wrangler es opcional)
