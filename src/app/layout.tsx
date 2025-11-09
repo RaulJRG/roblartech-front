@@ -3,7 +3,7 @@ import type { Metadata, Viewport } from "next";
 import WhatsAppFloat from "@/components/cta/WhatsAppFloat";
 import Toaster from "@/components/toaster/Toaster";
 import Script from "next/script";
-import { inter, materialSymbols } from "./fonts";
+import { inter } from "./fonts";
 
 // ================== METADATA ==================
 export const metadata: Metadata = {
@@ -68,7 +68,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html
       lang="es"
-      className={`scroll-smooth ${inter.variable} ${materialSymbols.variable}`}
+      className={`scroll-smooth ${inter.variable}`}
     >
       <head>
         {GTM_ID && (
