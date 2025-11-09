@@ -8,11 +8,8 @@ import { motion as m } from 'framer-motion';
 import { Stagger } from '@/lib/anim/Stagger';
 import { useAnimSet } from '@/lib/anim/useAnimSet';
 import Reveal from '@/lib/anim/Reveal';
-import { GradButton } from './shared/GradButton';
 import ActionLink from './shared/ActionLink';
 import { AjaxContactForm } from '../forms/AjaxContactForm';
-
-// Animaciones
 
 export default function Contact() {
   const v = useAnimSet(); // { container, staggerPills, fadeUp, ... }
@@ -74,30 +71,10 @@ export default function Contact() {
         <Stagger as="div" amount={0.16} once>
           <m.div
             variants={v.fadeUp}
-            className="rounded-[22px] border bg-white p-6 shadow-sm"
+            className="rounded-[22px] border bg-white p-6 shadow-sm scroll-mt-[100px]"
             style={{ borderColor: C_BORDER }}
+            id="contact-form"
           >
-            {/* Formulario /}
-            <form action="/api/contact" method="POST" className="rt-contact space-y-4">
-              <input type="text" name="website" tabIndex={-1} autoComplete="off"
-                className="hidden" aria-hidden="true" />
-
-              <Input label="Nombre" name="nombre" required placeholder="Tu nombre" />
-              <Input label="Email" name="email" type="email" required placeholder="tucorreo@dominio.com" />
-              <Input label="Teléfono" name="telefono" placeholder="000 000 00 00" />
-
-              <Select label="Tipo de sitio" name="tipo" defaultValue="basico">
-                <option value="basico">Básico</option>
-                <option value="premium">Premium</option>
-              </Select>
-
-              <Textarea label="Mensaje" name="mensaje" placeholder="Describe tu idea" />
-
-              <GradButton type="submit" className="w-full h-11 text-sm font-semibold" hoverScale={1.02}>
-                Enviar
-              </GradButton>
-            </form>
-            */}
             <AjaxContactForm waNumber="5214535325877">
               <Input label="Nombre" name="nombre" required placeholder="Tu nombre" />
               <Input label="Email" name="email" type="email" required placeholder="tucorreo@dominio.com" />

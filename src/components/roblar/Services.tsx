@@ -35,7 +35,7 @@ export default function Services() {
     });
 
     // 3) llevar al usuario al formulario
-    const el = document.getElementById('contact');
+    const el = document.getElementById('contact-form');
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
