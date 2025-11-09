@@ -1,94 +1,137 @@
-export const runtime = 'nodejs';
-import { NextResponse } from 'next/server';
-import Brevo from '@getbrevo/brevo';
+// app/api/contact/route.ts
+// Cloudflare + OpenNext: usar runtime Node.js (no declares 'edge').
 
-// ---------- CONFIGURACIÓN ----------
-function getBrevoClient() {
-  const client = new Brevo.TransactionalEmailsApi();
-  client.setApiKey(Brevo.TransactionalEmailsApiApiKeys.apiKey, process.env.BREVO_API_KEY!);
-  return client;
+type BrevoEmail = {
+  sender: { email: string; name?: string };
+  to: { email: string; name?: string }[];
+  subject: string;
+  htmlContent: string;
+  textContent?: string;
+  replyTo?: { email: string; name?: string };
+  tags?: string[];
+};
+
+type OkJson = { ok: true; id: string };
+type ErrJson = { ok: false; error: string };
+
+function mustEnv(name: string): string {
+  const v = process.env[name];
+  if (!v) throw new Error(`${name} is missing`);
+  return v;
 }
 
-// Si la petición viene del form AJAX (x-rt-ajax header)
-function wantsJSON(req: Request) {
-  return req.headers.get('x-rt-ajax') === '1' || req.headers.get('accept')?.includes('application/json');
+function escapeHtml(s: string) {
+  return s.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
 }
 
-// ---------- HANDLER PRINCIPAL ----------
 export async function POST(req: Request) {
   try {
-    const form = await req.formData();
-    const honey = (form.get('website') ?? '').toString().trim();
-    if (honey) {
-      // Bot detectado
-      return wantsJSON(req)
-        ? NextResponse.json({ ok: true })
-        : NextResponse.redirect(new URL('/gracias?ok=1', req.url), 303);
+    // Acepta JSON (como tu Postman) o FormData (desde el <form>)
+    const ctype = req.headers.get('content-type') ?? '';
+    let nombre = '', email = '', telefono = '', tipo = '', mensaje = '';
+
+    if (ctype.includes('application/json')) {
+      const b = (await req.json()) as Partial<Record<string, string>>;
+      nombre   = (b.nombre ?? '').trim();
+      email    = (b.email ?? '').trim();
+      telefono = (b.telefono ?? '').trim();
+      tipo     = (b.tipo ?? '').trim();
+      mensaje  = (b.mensaje ?? b.htmlContent ?? '').trim();
+    } else {
+      const form = await req.formData();
+      nombre   = (form.get('nombre') ?? '').toString().trim();
+      email    = (form.get('email') ?? '').toString().trim();
+      telefono = (form.get('telefono') ?? '').toString().trim();
+      tipo     = (form.get('tipo') ?? '').toString().trim();
+      mensaje  = (form.get('mensaje') ?? '').toString().trim();
     }
 
-    // Campos
-    const nombre   = (form.get('nombre') ?? '').toString();
-    const email    = (form.get('email') ?? '').toString();
-    const telefono = (form.get('telefono') ?? '').toString();
-    const tipo     = (form.get('tipo') ?? '').toString();
-    const mensaje  = (form.get('mensaje') ?? '').toString();
+    // Si llega payload "directo" (sender/to/subject/htmlContent), se pasa tal cual.
+    const raw = ctype.includes('application/json') ? await req.clone().json().catch(() => null) : null;
+    const hasDirect =
+      !!raw &&
+      typeof raw === 'object' &&
+      'sender' in raw &&
+      'to' in raw &&
+      'subject' in raw &&
+      'htmlContent' in raw;
 
-    if (!nombre || !email) {
-      const errorRes = { ok: false, error: 'Faltan campos obligatorios' };
-      return wantsJSON(req)
-        ? NextResponse.json(errorRes, { status: 400 })
-        : NextResponse.redirect(new URL('/gracias?ok=0&err=faltan_campos', req.url), 303);
+    const API_KEY   = mustEnv('BREVO_API_KEY');
+    const FROM      = process.env.BREVO_FROM || 'hola@roblartech.com';
+    const FROM_NAME = process.env.BREVO_FROM_NAME || 'Roblar Tech';
+    const TO        = process.env.BREVO_TO || 'hola@roblartech.com';
+
+    let payload: BrevoEmail;
+
+    if (hasDirect) {
+      const b = raw as BrevoEmail;
+      payload = b;
+    } else {
+      if (!nombre || !email) {
+        const err: ErrJson = { ok: false, error: 'Faltan campos obligatorios' };
+        return new Response(JSON.stringify(err), { status: 400, headers: { 'content-type': 'application/json' } });
+      }
+
+      const safeMsg = escapeHtml(mensaje).replace(/\n/g, '<br/>');
+      const html = `
+        <html><body style="font-family:ui-sans-serif,system-ui;">
+          <h2 style="margin:0 0 12px">Nuevo mensaje desde RoblarTech.com</h2>
+          <p><b>Nombre:</b> ${escapeHtml(nombre)}</p>
+          <p><b>Email:</b> ${escapeHtml(email)}</p>
+          <p><b>Teléfono:</b> ${escapeHtml(telefono || '-')}</p>
+          <p><b>Tipo de sitio:</b> ${escapeHtml(tipo || '-')}</p>
+          <p><b>Mensaje:</b><br/>${safeMsg || '-'}</p>
+        </body></html>
+      `.trim();
+
+      payload = {
+        sender: { email: FROM, name: FROM_NAME },
+        to: [{ email: TO, name: 'Roblar Tech' }],
+        subject: `Contacto web (${tipo || 'sin tipo'}): ${nombre}`,
+        htmlContent: html,
+        textContent:
+          `Nuevo mensaje desde RoblarTech.com\n` +
+          `Nombre: ${nombre}\nEmail: ${email}\nTeléfono: ${telefono || '-'}\nTipo: ${tipo || '-'}\n\n${mensaje}`,
+        replyTo: { email, name: nombre },
+        tags: ['contact-form'],
+      };
     }
 
-    // Contenido del correo
-    const html = `
-      <div style="font-family:ui-sans-serif,system-ui;">
-        <h2>Nuevo contacto desde el sitio</h2>
-        <table style="border-collapse:collapse;width:100%;max-width:640px">
-          <tbody>
-            <tr><td><b>Nombre</b></td><td>${nombre}</td></tr>
-            <tr><td><b>Email</b></td><td>${email}</td></tr>
-            <tr><td><b>Teléfono</b></td><td>${telefono || '-'}</td></tr>
-            <tr><td><b>Tipo de sitio</b></td><td>${tipo || '-'}</td></tr>
-            <tr><td><b>Mensaje</b></td><td>${mensaje.replace(/\n/g, '<br>') || '-'}</td></tr>
-          </tbody>
-        </table>
-      </div>
-    `;
-
-    // Cliente Brevo
-    const client = getBrevoClient();
-    const payload: Brevo.SendSmtpEmail = {
-      subject: `Contacto web (${tipo || 'sin tipo'}): ${nombre}`,
-      htmlContent: html,
-      sender: {
-        email: process.env.BREVO_FROM!,
-        name: process.env.BREVO_FROM_NAME || 'Formulario Web',
+    const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'api-key': API_KEY,
+        accept: 'application/json',
       },
-      to: [{ email: process.env.BREVO_TO! }],
-      replyTo: { email, name: nombre },
-    };
+      body: JSON.stringify(payload),
+    });
 
-    console.log('📨 Enviando correo...', payload);
-    const response = await client.sendTransacEmail(payload);
-    console.log('✅ Respuesta Brevo:', response);
+    const text = await res.text();
+    if (!res.ok) {
+      const err: ErrJson = { ok: false, error: `Brevo ${res.status}: ${text}` };
+      return new Response(JSON.stringify(err), { status: 500, headers: { 'content-type': 'application/json' } });
+    }
 
-    return wantsJSON(req)
-      ? NextResponse.json({ ok: true })
-      : NextResponse.redirect(new URL('/gracias?ok=1', req.url), 303);
+    let messageId = 'ok';
+    try {
+      const j = JSON.parse(text) as { messageId?: string };
+      if (j.messageId) messageId = j.messageId;
+    } catch { /* noop */ }
 
-  } catch (err: unknown) {
-    const message =
-      err instanceof Error ? err.message : typeof err === 'string' ? err : 'mail_error';
-    console.error('❌ Error envío:', message);
-
-    return wantsJSON(req)
-      ? NextResponse.json({ ok: false, error: message }, { status: 500 })
-      : NextResponse.redirect(new URL(`/gracias?ok=0&err=${encodeURIComponent(message)}`, req.url), 303);
+    return new Response(JSON.stringify({ ok: true, id: messageId } satisfies OkJson), {
+      status: 200,
+      headers: { 'content-type': 'application/json' },
+    });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : 'unexpected_error';
+    const err: ErrJson = { ok: false, error: msg };
+    return new Response(JSON.stringify(err), { status: 500, headers: { 'content-type': 'application/json' } });
   }
 }
 
-// (Opcional) GET para probar en navegador
 export async function GET() {
-  return NextResponse.json({ ok: true, endpoint: '/api/contact' });
+  return new Response(JSON.stringify({ ok: true, endpoint: '/api/contact' }), {
+    headers: { 'content-type': 'application/json' },
+  });
 }

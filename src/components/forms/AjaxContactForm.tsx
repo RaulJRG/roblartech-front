@@ -1,5 +1,6 @@
 // app/_components/AjaxContactForm.tsx
 'use client';
+
 import * as React from 'react';
 import { Mail } from 'lucide-react';
 import { toastError, toastSuccess } from '../toaster/Toaster';
@@ -9,7 +10,7 @@ import { trackEvent } from '@/lib/gtm';
 
 type Props = {
   children: React.ReactNode;
-  waNumber: string; // p.ej. "5214535325877"
+  waNumber: string; // e.g. "5214535325877"
 };
 
 function buildWaText(form: HTMLFormElement) {
@@ -24,7 +25,6 @@ function buildWaText(form: HTMLFormElement) {
     nombre ? `Hola, mi nombre es ${nombre}.` : 'Hola.',
     tipo ? `Me interesa un sitio ${tipo}.` : '',
     mensaje ? `${mensaje}` : '',
-    email || tel ? '' : '',
     email ? `Correo: ${email}` : '',
     tel ? `Tel: ${tel}` : '',
   ].filter(Boolean);
@@ -39,11 +39,10 @@ export function AjaxContactForm({ children, waNumber }: Props) {
   const [loading, setLoading] = React.useState(false);
   const formRef = React.useRef<HTMLFormElement | null>(null);
 
-  // 👇 NUEVO: escuchar selección de plan desde Services
+  // Escucha selección de plan (sin tocar WindowEventMap)
   React.useEffect(() => {
     // Tipo local (no global) para el detail del evento
     type Detail = { plan: 'basico' | 'premium' };
-
     // Tipamos el listener como EventListener y casteamos el evento a CustomEvent<Detail>
     const onSelectPlan: EventListener = (ev) => {
       const { plan } = (ev as CustomEvent<Detail>).detail ?? {};
@@ -64,10 +63,9 @@ export function AjaxContactForm({ children, waNumber }: Props) {
   async function submitEmail(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (loading) return;
-
     setLoading(true);
-    const formEl = e.currentTarget;
 
+    const formEl = e.currentTarget;
 
     try {
       const res = await fetch('/api/contact', {
@@ -75,19 +73,15 @@ export function AjaxContactForm({ children, waNumber }: Props) {
         body: new FormData(formEl),
         headers: { 'x-rt-ajax': '1' },
       });
-      const data = await res.json().catch(() => ({}));
+
+      const data = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string };
       if (!res.ok || !data?.ok) throw new Error(data?.error || 'No se pudo enviar');
-      // Toast fijo hasta cerrar manualmente:
-      toastSuccess("Tu correo ha sido enviado", "Te responderemos a la brevedad")
-      trackEvent({
-        event: 'generate_lead',
-        method: 'email',
-        location: 'contact_section',
-      })
-    } catch (err: unknown) {
+
+      toastSuccess('Tu correo ha sido enviado', 'Te responderemos a la brevedad');
+      trackEvent({ event: 'generate_lead', method: 'email', location: 'contact_section' });
+    } catch (err) {
       const msg = err instanceof Error ? err.message : 'Error inesperado';
-      toastError("No pudimos enviar tu correo", msg)
-      //toast.error(msg, { duration: 3800 });
+      toastError('No pudimos enviar tu correo', msg);
     } finally {
       setLoading(false);
     }
@@ -97,12 +91,7 @@ export function AjaxContactForm({ children, waNumber }: Props) {
     if (!formRef.current) return;
     const text = buildWaText(formRef.current);
 
-    trackEvent({
-      event: 'generate_lead',
-      method: 'whatsapp',
-      location: 'contact_section',
-    })
-
+    trackEvent({ event: 'generate_lead', method: 'whatsapp', location: 'contact_section' });
     window.open(waUrl(waNumber, text), '_blank', 'noopener,noreferrer');
   }
 
@@ -116,20 +105,25 @@ export function AjaxContactForm({ children, waNumber }: Props) {
       aria-live="polite"
     >
       {/* Honeypot */}
-      <input type="text" name="website" tabIndex={-1} autoComplete="off" className="hidden" aria-hidden="true" />
+      <input
+        type="text"
+        name="website"
+        tabIndex={-1}
+        autoComplete="off"
+        className="hidden"
+        aria-hidden="true"
+      />
 
       {/* Campos */}
       <fieldset className="space-y-4">{children}</fieldset>
 
-      {/* Acciones: SOLO 2 BOTONES */}
+      {/* Acciones */}
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <ActionButton
           type="submit"
           hoverScale={1.02}
           variant="blue"
-          leftIcon={
-            <Mail className="h-4 w-4" />
-          }
+          leftIcon={<Mail className="h-4 w-4" />}
           disabled={loading}
           aria-busy={loading}
           innerClassName="!p-0 !w-100 inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-gradient-to-r from-[#3077e8] to-[#38BDF8] px-4 text-sm font-semibold text-white shadow-sm transition-transform disabled:opacity-60 disabled:hover:scale-100"
@@ -137,7 +131,8 @@ export function AjaxContactForm({ children, waNumber }: Props) {
           {loading ? 'Enviando…' : 'Enviar por correo'}
         </ActionButton>
 
-        <ActionLink target="_blank"
+        <ActionLink
+          target="_blank"
           onClick={sendWhatsApp}
           rel="noopener noreferrer"
           aria-label="Enviar por WhatsApp"

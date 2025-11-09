@@ -26,9 +26,6 @@ Slate
 # Framer motion
 npm install framer-motion
 
-# webpack
-npm i -D webpack
-
 # Iconify
 npm i @iconify/react @iconify-icons/material-symbols
 
@@ -38,11 +35,8 @@ npm i -D @iconify/types
 # Toaster
 npm install @radix-ui/react-toast
 
-# Envio de correos
-npm i @getbrevo/brevo
-
-
 # Despliegue en cloudflare
 npm i -D @opennextjs/cloudflare wrangler
 
-(wrangler es opcional)
+# Envio de correos (No se uso porque cloudflare no lo soporta)
+npm i @getbrevo/brevo
