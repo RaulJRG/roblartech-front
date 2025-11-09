@@ -1,0 +1,33 @@
+.marquee {
+  position: relative;
+  overflow: hidden;
+}
+
+.marqueeTrack {
+  display: flex;
+  width: max-content;
+  animation: marquee-slide var(--marquee-speed) linear infinite;
+  will-change: transform;
+  transform: translate3d(0, 0, 0);
+}
+
+.marqueeGroup {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--marquee-gap);
+  flex: none;
+}
+
+/* Bucle perfecto: mover justo media pista (dos grupos idénticos) */
+@keyframes marquee-slide {
+  0%   { transform: translate3d(0, 0, 0); }
+  100% { transform: translate3d(-50%, 0, 0); }
+}
+
+/* Accesibilidad: respeta preferencias de movimiento reducido */
+@media (prefers-reduced-motion: reduce) {
+  .marqueeTrack {
+    animation: none !important;
+    transform: none !important;
+  }
+}
