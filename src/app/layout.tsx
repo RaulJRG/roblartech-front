@@ -82,6 +82,34 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             `}
           </Script>
         )}
+        <Script id="schema-org" type="application/ld+json" strategy="afterInteractive">
+          {JSON.stringify({
+            "@context": "https://schema.org",
+            "@graph": [
+              {
+                "@type": "Organization",
+                "@id": "https://roblartech.com/#organization",
+                "name": "Roblar Tech",
+                "url": "https://roblartech.com/",
+                "logo": {
+                  "@type": "ImageObject",
+                  "url": "https://roblartech.com/logo-512.png",
+                  "width": 512,
+                  "height": 512
+                },
+                "description": "En Roblar Tech combinamos diseño, tecnología e innovación para crear sitios web rápidos, atractivos y optimizados que impulsan tu presencia digital y generan resultados reales."
+              },
+              {
+                "@type": "WebSite",
+                "@id": "https://roblartech.com/#website",
+                "url": "https://roblartech.com/",
+                "name": "Roblar Tech",
+                "publisher": { "@id": "https://roblartech.com/#organization" },
+                "inLanguage": "es-MX"
+              }
+            ]
+          })}
+        </Script>
       </head>
       <body className="bg-background-light font-sans">
         {GTM_ID && (
