@@ -39,7 +39,7 @@ export default function Contact() {
             </p>
 
             <div className="mt-6 flex flex-wrap items-center gap-3">
-              <ActionLink href="https://wa.me/5214535325877" target="_blank"
+              <ActionLink href="https://wa.me/5214623746166" target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Escríbeme por WhatsApp"
                 hoverScale={1.02}
@@ -75,7 +75,7 @@ export default function Contact() {
             style={{ borderColor: C_BORDER }}
             id="contact-form"
           >
-            <AjaxContactForm waNumber="5214535325877">
+            <AjaxContactForm waNumber="5214623746166">
               <Input label="Nombre" name="nombre" required placeholder="Tu nombre" />
               <Input label="Email" name="email" type="email" required placeholder="tucorreo@dominio.com" />
               <Input label="Teléfono" name="telefono" placeholder="000 000 00 00" />

@@ -33,8 +33,8 @@ export default function About({
   title = "Quiénes somos",
   subtitle = "Somos especialistas en ingeniería de software y diseño web, el mejor aliado para marcas que quieren ir más lejos. Entregamos rendimiento real, SEO técnico y métricas claras para crecer con datos.",
   stats = [
-    { value: "5+ años", label: "Experiencia" },
-    { value: "50+ proyectos", label: "Realizados" },
+    { value: "8+ años", label: "Experiencia" },
+    { value: "100+ proyectos", label: "Realizados" },
     { value: "95+ ", label: "Buenas prácticas" },
   ],
   image = {

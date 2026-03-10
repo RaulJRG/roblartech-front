@@ -138,7 +138,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </div>
             </div>
             <WhatsAppFloat
-              phone="5214535325877"
+              phone="5214623746166"
               message={`Hola, quiero cotizar un sitio web`}
               label="Escríbenos por WhatsApp"
               position={{ right: 18, bottom: 18 }}

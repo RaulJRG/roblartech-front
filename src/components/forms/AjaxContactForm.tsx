@@ -10,7 +10,7 @@ import { trackEvent } from '@/lib/gtm';
 
 type Props = {
   children: React.ReactNode;
-  waNumber: string; // e.g. "5214535325877"
+  waNumber: string;
 };
 
 function buildWaText(form: HTMLFormElement) {
